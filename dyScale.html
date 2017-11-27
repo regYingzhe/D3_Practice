@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.2/d3.js"></script>
+</head>
+<body>
+	<script type="text/javascript">
+
+		var secondButton = d3.select("body").append("input")
+							.attr("type", "button")
+							.attr("value", "Seconds")
+							.attr("id", "button_seconds")
+							.style("font-size", "2em")
+
+		var milliSecondButton = d3.select("body").append("input")
+					.attr("type", "button")
+					.attr("value", "Milliseconds")
+					.attr("id", "button_milliseconds")
+					.style("font-size", "2em")
+
+		d3.select("body").append("br");
+
+		var intervalName = "seconds";
+
+		function updateData(usingSeconds) {
+			var currentTime = new Date();
+			return [{"time_unit": (usingSeconds) ? "second" : "millisecond",
+					 "time_data": currentTime.getSeconds() * ((usingSeconds) ? 1: 1000)
+					}];
+		}
+		//build the svgViewPort 
+		var svgViewPort = d3.select("body").append("svg").attr("width", 300).attr("height", 300);
+		var margin = {top: 50, right: 50, bottom: 50, left: 75},
+			width = 300 - margin.left - margin.right,
+			height = 300 - margin.top - margin.bottom;
+		var innerSpace = svgViewPort.append("g").attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+		//build x scaling axis
+		var xAxisScale = d3.scale.ordinal().domain(["seconds"]).rangeRoundBands([0, width], 0.1);
+		//build y scaling axis
+		var yAxisScale = d3.scale.linear().domain([0, 59]).range([height, 0]).nice();
+		//set x axis orientation
+		var xAxis = d3.svg.axis().scale(xAxisScale).orient("bottom")
+		//set y axis orientation
+		var yAxis = d3.svg.axis().scale(yAxisScale).orient("left")
+		//call on x axis
+		var axisXGroup = innerSpace.append("g").attr("class", "x axis").attr("transform", "translate(0," + height +")")
+							.call(xAxis)
+		//call on y axis
+		var axisYGroup = innerSpace.append("g").attr("class", "y axis").call(yAxis)
+
+		secondButton.on("click", function() { intervalName = "seconds"});
+
+		milliSecondButton.on("click", function() {intervalName = "milliSeconds"})
+
+		var data = updateData(true);
+
+		var rectangels = innerSpace.selectAll(".bar").data(data).enter().append("rect")
+						.attr("class", "bar")
+						.attr("x", function(d, i) { return xAxisScale(d.time_unit); })
+						.attr("y", function(d, i) { return yAxisScale(d.time_data); })
+						.attr("width", xAxisScale.rangeBand())
+						.attr("height", function(d, i) {return height - yAxisScale(d.time_data)})
+						.style("fill", "steelblue")
+		console.log("the xAxisScale rangeBand is", xAxisScale.rangeBand());
+		console.log("time second", xAxisScale("second"));
+
+		var text = innerSpace.append("g").attr("class", "bar_label").selectAll("text")
+					.data(data)
+					.enter().append("text")
+					.attr("x", function(d, i) {
+						return xAxisScale(d.time_unit) + xAxisScale.rangeBand()/2
+					})
+					.attr("y", function(d, i) { return yAxisScale(d.time_data) - 15})
+					.attr("id", "text_label")
+					.attr("font-family", "sans-serif")
+					.attr("font-size", "22px")
+					.attr("fill", "red")
+					.attr("text-anchor", "middle")
+					.text(function(d, i) {return d.time_data})
+
+		function redraw(intervalName) {
+			// calculate usingSeconds boolean
+			var usingSeconds = intervalName === "seconds";
+			// generate data
+			var data = updateData(usingSeconds);
+			
+			// redefine the Y scale
+			var yAxisScale = d3.scale.linear().domain([0, 59 * ((usingSeconds ? 1 : 1000))])
+				.range([height, 0])
+				.nice();
+			// redefine the  y axis
+			yAxis.scale(yAxisScale);
+			// redraw the Y axis
+			d3.select(".y").transition().duration(1000).call(yAxis);
+			// redefine the x Scale
+			var xAxisScale = d3.scale.ordinal()
+				.domain([(usingSeconds) ? "seconds" : "milliseconds"])
+				.rangeRoundBands([0, width], .1);
+			// redefine the x axis
+			xAxis.scale(xAxisScale);
+			// redraw the x axis
+			d3.select(".x").transition().duration(3000).call(xAxis)
+			// redraw the rectangle
+			innerSpace.selectAll(".bar").data(data).transition().duration(1000)
+			.attr("y", function(d, i) { return yAxisScale(d.time_data)})
+			.attr("height", function(d, i) { return height - yAxisScale(d.time_data);})
+			.style("fill", function(d, i) {
+				if (d.time_data % 2 === 0) { return "steelblue"; }
+				else { return "green" }
+			})
+
+			// redraw the text label
+			innerSpace.select("#text_label").data(data).transition()
+			.duration(1000).attr("y", function(d, i) {return yAxisScale(d.time_data) - 15})
+			.text(function(d, i) { return d.time_data; })
+		}
+
+			secondButton.on("click", function() { intervalName = "seconds" });
+			milliSecondButton.on("click", function() { intervalName = "milliSeconds" });
+
+			var originalSetInterval = setInterval(function() {redraw(intervalName); }, 1000)
+
+
+
+	</script>
+</body>
+</html>

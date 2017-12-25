@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.0.6/d3.min.js"></script>
+</head>
+<body>
+	<script type="text/javascript">
+		var svg = d3.select("body").append("svg").attr("height", "300").attr("width", "600")
+		.append("g").attr("transform", "translate(12, 150)");
+
+		var textSelection = svg.selectAll("text").data("datadriverndocuments".split(""));
+
+		textSelection.enter().append("text").attr("class", "initial")
+		.attr("x", function(d, i) {return i * 24}).attr("dy", ".35em")
+
+		textSelection.text(function(d) { return d;})
+
+		var cupcake = "cupcake".split("");
+		var flamingo = "flamingo".split("");
+		var icecream = "icecream".split("");
+
+		// less than
+		var text = svg.selectAll("text").data(cupcake);
+
+		text.attr("class", "cupcake_update");
+
+		// no new element will be created by using the following line
+		// text.enter().append("text").attr("class", "cupcake_enter")
+
+
+		text.exit().attr("class", "cupcake_exit");
+
+		text.text(function(d) {return d;})
+
+		text.exit().remove();
+
+		// more than
+		var text = svg.selectAll("text").data(flamingo);
+
+		text.attr("class", "flamingo_update");
+		// Once we used the append operator on the enter selection, the update selection expand to 
+		// include 
+		text.enter().append("text").attr("class", "flamingo_enter")
+		.attr("x", function(d, i) {return i*24; })
+		.attr("dy", ".35em");
+
+
+		text.text(function(d) { return d; });
+
+		//same
+
+		var text = svg.selectAll("text").data(icecream);
+		text.attr("class", "icecream_update");
+		text.text(function(d) { return d; });
+
+		var text = svg.selectAll("text").data(cupcake);
+		text.exit().attr("class", "cupcake_exit");
+		text.exit().remove();
+		text.text(function(d) {return d;});
+	</script>
+</body>
+</html>

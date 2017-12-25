@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.0.6/d3.min.js"></script>
+</head>
+<style type="text/css">
+	.node {
+		fill: #ccc;
+		stroke: #000;
+		stroke-width: 2px;
+	}
+
+	.link {
+		stroke: #777;
+		stroke-width: 2px;
+	}
+
+	path.link {
+		stroke: #777;
+		stroke-width: 2px;
+		fill: none;
+	}
+
+	h1 {
+		padding: 10px;
+	}
+
+</style>
+<body>
+	<h4>
+		gravity(<span id="sliderLabel">0.1</span>)
+		<input type="range" value="0.1" min="0" max="1"
+		onchange="forceUpdate(this.value)" step="0.01"
+		>
+	</h4>
+
+	<h4>
+		charge(<span id="chargeLabel">1000</span>)
+		<input type="range" value="1000" min="-50000" max="50000" 
+		onchange="chargeUpdate(this.value)" step="100"
+		>
+	</h4>
+	<script type="text/javascript">
+		var param = document.URL.split("#")[1] || 100;
+		var strength = document.URL.split("#")[2] || 1;
+
+
+
+		var header = d3.select("body").append("h1")
+		.html("linkDistance("+param+")")
+		.style("text-align", "center");
+
+		var header2 = d3.select("body").append("h1")
+		.html("linkStrength("+strength+")")
+		.style("text-align", "center");
+		
+		// set a width and height for our SVG
+		var width = 640;
+		var height = 480;
+
+		// set up nodes and links dataStructure
+		var nodes = [{name: 'Alice'}, {name: 'Bob'}, {name: 'Eva'}];
+		var links = [{source: 0, target: 1}, {source: 1, target: 2}, {source: 2, target: 0}];
+
+		var svg = d3.select("body").append("svg").attr("width", width)
+		.attr("height", height);
+
+		// add the nodes
+		var node = svg.selectAll(".node")
+		.data(nodes)
+		.enter().append("circle")
+		.attr("class", "node")
+		.attr("cx", function(d, i) { return (i + 1) * (width/4); })
+		.attr("cy", function(d, i) { return height / 2; })
+		.attr("r", width * 0.05)
+		// For Straight Link
+		var link = svg.selectAll(".link").data(links).enter().append("line")
+		.attr("class", "link")
+		//For curve
+		var path = svg.append("g").selectAll("path").data(links)
+		.enter().append("path").attr("class", "link");
+
+
+		// create the force layout graph
+		var force = d3.layout.force()
+		.size([width, height])
+		.nodes(nodes)
+		.links(links)
+		.on("tick", tick)
+		.linkDistance(param)
+		.linkStrength(strength)
+		.gravity(0.1)
+		.charge(30)
+		.start();
+
+		svg.append("svg:defs").selectAll("marker")
+		.data(['end']).enter().append("svg:marker")
+		.attr("id", String)
+		.attr("viewBox", "0 -5 10 10")
+		.attr("refX", 10)
+		.attr("refY", -0.5)
+		.attr("markerWidth", 6)
+		.attr("markerHeight", 6)
+		.attr("orient", "auto")
+		.attr("fill", "#404040")
+		.append("svg:path")
+		.attr("d", "M0, -5L10, 0L0, 5");
+
+		var path = svg.append("svg:g").selectAll("path")
+		.data(force.links())
+		.enter().append("svg:path")
+		.attr("class", "link")
+		.attr("marker-end", "url(#end)")
+
+		function forceUpdate(val) {
+			d3.select("#sliderLabel").text(val);
+			force.gravity(val);
+			force.start();
+		}
+
+		function chargeUpdate(val) {
+			d3.select("#chargeLabel").text(val);
+			force.charge(val);
+			force.start();
+		}
+
+
+
+		function tick() {
+			node.attr("cx", function(d) { return d.x; })
+			.attr("cy", function(d) { return d.y; })
+			.call(force.drag);
+
+			// link.attr("x1", function(d) { return d.source.x; })
+			// .attr("y1", function(d) { return d.source.y; })
+			// .attr("x2", function(d) { return d.target.x; })
+			// .attr("y2", function(d) { return d.target.y; });
+
+			path.attr("d", function(d, i) {
+				var dx = d.target.x - d.source.x,
+				dy = d.target.y - d.source.y,
+				dr = Math.sqrt(dx * dx + dy * dy);
+
+				return "M" + 
+				d.source.x + "," +
+				d.source.y + "A" +
+				dr + "," + dr + " 0 0,1 " + 
+				d.target.x + "," + 
+				d.target.y;
+			})
+
+		} 
+
+
+
+
+	</script>
+
+</body>
+</html>

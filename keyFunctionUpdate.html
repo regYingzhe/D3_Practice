@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.0.6/d3.min.js"></script>
+
+</head>
+<body>
+	<script type="text/javascript">
+		dataSetAll = [{"name": "Shanghai"        , "population": 18, "rank":  1},
+              {"name": "Guangzhou"       , "population": 11, "rank": 10},
+              {"name": "Dongguan"        , "population":  8, "rank": 20},
+              {"name": "Cairo"           , "population":  7, "rank": 30},
+              {"name": "Saint Petersburg", "population":  5, "rank": 40},
+              {"name": "New Taipei"      , "population":  4, "rank": 50}];
+
+		dataSetAsiaHalved = [{"name": "Shanghai"  , "population": 9, "rank":  1},
+		                     {"name": "Guangzhou" , "population": 5, "rank": 10},
+		                     {"name": "Dongguan"  , "population": 4, "rank": 20},
+		                     {"name": "New Taipei", "population": 2, "rank": 50}];
+
+		var svgViewPort = d3.select("body").append("svg").attr("width", 300).attr("height", 300);
+		var margin = { top: 50, right: 50, bottom: 50, left: 50},
+			width = 300 - margin.left - margin.right,
+			height = 300 - margin.top - margin.bottom;
+
+		var innerSpace = svgViewPort.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		var xAxisScale = d3.scale.linear().domain([0, 20]).range([0, width]);
+		var yAxisScale = d3.scale.linear().domain([0, 50]).range([0, height]);
+
+		var xAxis = d3.svg.axis().scale(xAxisScale).orient("top");
+		var yAxis = d3.svg.axis().scale(yAxisScale).orient("left");
+
+		var xAxisGroup = innerSpace.append("g").attr("class", "x axis").call(xAxis);
+		var yAxisGroup = innerSpace.append("g").attr("class", "y axis").call(yAxis);
+
+		// Create circles
+		var circles = innerSpace.append("g").attr("class", "circles").selectAll("circle")
+		.data(dataSetAll).enter().append("circle");
+
+		//Set circles attributes
+		var circleAttributes = circles.attr("cx", function(d, i) { return xAxisScale(d.population)})
+		.attr("cy", function(d, i) {return yAxisScale(d.rank); }).attr("r", 5);
+
+		// Create text
+		var text = innerSpace.append("g").attr("class", "city-names").selectAll("text")
+		.data(dataSetAll).enter().append("text")
+
+		//Set text attributes
+		var textAttributes = text.attr('x', function(d, i) { return xAxisScale(d.population) + 10; })
+		.attr("y", function(d, i) { return yAxisScale(d.rank) + 10; })
+		.text(function(d, i) { return d.name})
+		.style("fill", "red");
+
+
+
+		var circles = innerSpace.selectAll("circle").data(dataSetAsiaHalved, function(d, i) { return d.name; });
+
+		// remove the circle
+		circles.exit().remove();
+
+		var circleAttributes = circles.attr("cx", function(d, i) { return xAxisScale(d.population)})
+		.attr("cy", function(d, i) {return yAxisScale(d.rank); }).attr("r", 5);
+		
+		// remove the text
+		var text = innerSpace.select(".city-names").selectAll("text").data(dataSetAsiaHalved, function(d, i) { return d.name; });
+
+		text.exit().remove();
+
+		var textAttributes = text.attr("x", function(d, i) { return xAxisScale(d.population) + 10; })
+		.attr("y", function(d, i) { return yAxisScale(d.rank) + 10; })
+		.text(function(d, i) { return d.name; })
+		.style("fill", "red");
+
+		// restore the data
+
+		var circles = innerSpace.select(".circles").selectAll("circle").data(dataSetAll, function(d, i) {return d.name; });
+
+		// expand circles
+		var circleAttributes = circles.enter().append("circle")
+		.attr("cx", function(d, i) { return xAxisScale(d.population); })
+		.attr("cy", function(d, i) { return yAxisScale(d.rank); })
+		.attr("r", 5);
+
+		// update all the data
+
+		var circleAttributes = circles
+		.attr("cx", function(d, i) { return xAxisScale(d.population); })
+		.attr("cy", function(d, i) { return yAxisScale(d.rank); })
+		.attr("r", 5);
+
+		// restore the text
+		var text = innerSpace.select(".city-names").selectAll("text").data(dataSetAll, function(d, i) { return d.name; });
+		// expand the text
+		var textAttributes = text.enter().append("text")
+		.attr('x', function(d, i) { return xAxisScale(d.population) + 10; })
+		.attr("y", function(d, i) { return yAxisScale(d.rank) + 10; })
+		.text(function(d, i) { return d.name})
+		.style("fill", "red");
+		// need to do twice to update all the texts
+		var textAttributes = text.attr('x', function(d, i) { return xAxisScale(d.population) + 10; })
+		.attr("y", function(d, i) { return yAxisScale(d.rank) + 10; })
+		.text(function(d, i) { return d.name})
+		.style("fill", "red");
+
+
+
+	</script>
+
+</body>
+</html>

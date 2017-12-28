@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.0.6/d3.min.js"></script>
+	<style type="text/css">
+		body {
+			font: 10px sans-serif;
+		}
+		.arc path {
+			stroke: #fff;
+		}
+	</style>
+</head>
+<body>
+	<script type="text/javascript">
+		var width = 960,
+			height = 500,
+			radius = Math.min(width, height) / 2;
+
+		var color = d3.scale.ordinal()
+    	.range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+    	// try to change outerRaius without 10
+        // If you pass data into the arc generation functions, it will return svg path data instructions in the 
+        // svg path mini language
+    	var arc = d3.svg.arc().outerRadius(radius - 10)
+    	.innerRadius(radius - 70);
+
+        // Help me with math, start and ending angle
+    	var pie = d3.layout.pie().sort(null).value(function(d) { return d.population; });
+
+    	var svg = d3.select("body").append("svg").attr("width", width)
+    	.attr("height", height)
+    	.append("g")
+    	.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+
+    	d3.csv("pieChartData.csv", function(error, data) {
+    		data.forEach(function(d) {
+    			d.population = +d.population;
+    		})
+            // pie(data) returns 7 objects
+    		var g = svg.selectAll(".arc").data(pie(data)).enter().append("g")
+    		.attr("class", "arc");
+
+    		g.append("path")
+    		.attr("d", arc)
+    		.style("fill", function(d) { console.log(d); return color(d.data.age); })
+    		console.log(data.age);
+    		console.log(data);
+    		console.log(data[0].age);
+
+    		g.append("text")
+    		.attr("transform", function(d) { console.log(d); return "translate(" + arc.centroid(d) + ")"; })
+    		.attr("dy", ".35em")
+    		.style("text-anchor", "middle")
+    		.text(function(d) { return d.data.age})
+            // Two things are crucial to understand about this donut chart example.
+
+// One - that the code is exactly the same as the pie chart other than how the D3 Arc Generator Function innerRadius is defined.
+
+// Two - that this chart uses the same pattern we have seen before regarding working with nested data that we generate from data passed to us from the server.
+
+// To use the D3 pattern we create an array of JavaScript objects that hold data inside of them.
+
+// Then inside of each JavaScript Object, we create more JavaScript objects to hold data inside of them.
+
+
+// In previous charts, we created an array of JavaScript objects inside of each object.
+
+// In this chart, we create one JavaScript Object inside of each object.
+
+// This double layering of objects and data allows us to use the D3 pattern twice.
+
+// Using this array of objects where each object has an object inside of them, we can bind the outside objects to SVG Group Elements and we can use the inside objects to generate the SVG Path Element Mini-Language Instructions based on the D3 Arc Generator Function and the D3 Pie Chart Layout function.
+
+// In this chart we use the D3 Pie Chart Layout Function to do the math calculations behind the scenes for us.
+
+
+    	})
+
+	</script>
+</body>
+</html>

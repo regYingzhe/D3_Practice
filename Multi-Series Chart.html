@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<style type="text/css">
+	body {
+		font: 10px sans-serif;
+	}
+	.axis path,
+	.axis line {
+		fill: none;
+		stroke: #000;
+		shape-rendering: : crispEdges;
+	}
+	.x.axis path {
+		display: none;
+	}
+
+	.line {
+		fill: none;
+		stroke: steelblue;
+		stroke-width: 1.5px;
+	}
+</style>
+<head>
+	<title></title>
+</head>
+<body>
+	<script src="https://d3js.org/d3.v3.min.js"></script>
+	<script>
+		var margin = {top: 30, right: 80, bottom: 30, left: 50},
+			width = 960 - margin.left - margin.right,
+			height = 500 - margin.top - margin.bottom;
+
+		var parseDate = d3.time.format("%Y%m%d").parse;
+
+		var xAxisScale = d3.time.scale().range([0, width]);
+
+		var yAxisScale = d3.scale.linear().range([height, 0]);
+
+		var color = d3.scale.category10();
+
+		var xAxis = d3.svg.axis().scale(xAxisScale).orient("bottom");
+
+		var yAxis = d3.svg.axis().scale(yAxisScale).orient("left");
+
+		// setup line generator tell me how to process the data
+		var line = d3.svg.line().interpolate("basic")
+		.x(function(d) { return xAxisScale(d.date); })
+		.y(function(d) { return yAxisScale(d.temperature); });
+
+
+		// mistake happen append svg but not g
+		var svg = d3.select("body").append("svg").attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+		
+
+		// first axisScale, the axis, finally axisGroup
+
+
+
+
+		// setup color category
+		
+
+
+
+		d3.tsv("multiSeriesChart.tsv", function(error, data) {
+			console.log(data[0]);
+			console.log(d3.keys(data[0]));
+			console.log(d3.keys(data[0]).filter(function(key) { return key != "date"}));
+			
+			color.domain(d3.keys(data[0]).filter(function(key) { return key !== "date"}));
+			
+			data.forEach(function(d) { d.date = parseDate(d.date); })
+			console.log(data[0]);
+			
+			xAxisScale.domain(d3.extent(data, function(d) { return d.date; }));
+
+			var cities = color.domain().map(function(name) {
+				return {
+					name: name,
+					values: data.map(function(d) {
+						return {date: d.date, temperature: +d[name]};
+					})
+				}
+			})
+			
+
+
+
+
+			// every city has its own min and max value, that's why we need to do it twice
+			ymin = d3.min(cities, function(city) {
+				return d3.min(city.values, function(d) { return d.temperature; })
+			})
+			console.log(ymin);
+
+			ymax = d3.max(cities, function(city) {
+				return d3.max(city.values, function(d) { return d.temperature;})
+			})
+			console.log(ymax);
+
+			console.log(cities[0])
+			yAxisScale.domain([ymin, ymax]);
+
+			var xAxisGroup = svg.append("g").attr("class", "x axis")
+			.attr("transform", "translate(0, " + height + ")")
+			.call(xAxis);
+
+			var yAxisGroup = svg.append("g").attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 6)
+			.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text("Temperature (F)");
+
+			var city = svg.selectAll(".city")
+			.data(cities)
+			.enter().append("g")
+			.attr("class", "city");
+
+			city.append("path")
+			.attr("class", "line")
+			.attr("d", function(d) { return line(d.values); })
+			.style("stroke", function(d) { return color(d.name); })
+			.style("fill", "none")
+
+			// get the last element of the array
+			city.append("text")
+			.datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
+			.attr("transform", function(d) { return "translate(" + xAxisScale(d.value.date) + "," + 
+			yAxisScale(d.value.temperature) + ")"})
+			.attr("x", 3)
+			.attr("dy", ".35em")
+			.text(function(d) { return d.name})
+			.attr("class", "city_text");
+		})
+
+
+	</script>
+
+</body>
+</html>

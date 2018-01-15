@@ -44,15 +44,20 @@
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 		d3.tsv("lineChartData.tsv", function(error, data) {
+			console.log("the type of data in tsv", typeof data);
+			console.log("the type of date in data", typeof data[0].date);
+			console.log("the type of close in data", typeof data[0].close);
 			data.forEach(function(d) {
 				d.date = parseDate(d.date);
 				d.close = +d.close;
 			});
-			console.log(data[0]);
+			// We can tell that paseDate takes in string and output date object
+			console.log("the type of date in data", typeof data[0].date);
 			x.domain(d3.extent(data, function(d) { return d.date; }));
 			y.domain([0, d3.max(data, function(d) { return d.close; })]);
 
 			// Try to change datum to data to see the different
+			// If datum change to data, the area chart won't be drew
 			svg.append("path")
 			.datum(data)
 			.attr("class", "area")

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+
+	<script src="//code.jquery.com/jquery-1.10.2.js"></script>
+	<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+	<script src="https://d3js.org/d3.v3.min.js"  charset="utf-8"></script>
+	<title>StackChart</title>
+	<style type="text/css">
+		body {
+		  font-family: sans-serif;
+		  padding: 20px;
+		}
+		.panel {
+		  width: 600px;
+		}
+
+		.axis path,
+		.axis line {
+		  shape-rendering: crispEdges;
+		}
+
+		.line, line, path {
+		  fill: none;
+		  stroke-width: 1;
+		  stroke: #000;
+		}
+
+		.slider {
+		  max-width: 300px;
+		}
+	</style>
+		<div class="panel panel-default">
+		  <div class="panel-heading">Chart</div>
+		  <div class="panel-body"> 
+		    <div id="chart"></div>
+		  </div>
+		  <div class="panel-footer">
+		    <div id="slider"></div>
+		  </div>
+		</div>
+</head>
+<body>
+
+	<script type="text/javascript">
+		// D3 CHART
+		random = d3.random.normal(0, .3);
+		console.log("random is", random);
+		console.log("random number1 is", random(2));
+		console.log("random number2 is", random(3));
+		var n = 100,
+		    duration = 50,
+		    now = new Date(Date.now() - duration),
+		    data = d3.range(n).map( random );
+		// console.log("range is: ", d3.range(10));
+		// console.log("without subtraction of now is ", new Date(Date.now()))
+		// var getNow = Date.now();
+		// console.log("Date now is ", getNow)
+		// console.log("Convert Date now", new Date(getNow))
+		// var subtractGetNow = getNow - duration
+		// console.log("Date now with subtraction", new Date(subtractGetNow));
+
+		// console.log("now is: ", now);
+		// console.log("data is: ", data);
+
+
+		var margin = 40;
+
+		// get height from element attributes, otherwise set default
+		var height = 300 - margin * 2;
+		var width = $('.panel').width() - margin * 2;
+		console.log("panel width is: ", $('.panel').width());
+		console.log(width);
+
+		var x = d3.time.scale()
+		    .domain([now - (n - 2) * duration, now - duration])
+		    .range([0, width]);
+
+		var y = d3.scale.linear()
+		    .domain([-1, 1])
+		    .range([height, 0]);
+
+		var line = d3.svg.line()
+		    .interpolate("basis")
+		    .x(function(d, i) { return x(now - (n - 1 - i) * duration); })
+		    .y(function(d, i) { return y(d); });
+
+		var svg = d3.select("#chart").append("svg")
+		    .attr("width", width + margin + margin)
+		    .attr("height", height + margin + margin)
+		  .append("g")
+		    .attr("transform", "translate(" + margin + "," + margin + ")");
+
+		svg.append("defs").append("clipPath")
+		    .attr("id", "clip")
+		  .append("rect")
+		    .attr("width", width)
+		    .attr("height", height);
+
+		var yAxis = svg.append("g")
+		  .attr("class", "y axis")
+		  .call(y.axis = d3.svg.axis().scale(y).ticks(5).orient("left"));
+
+		var xAxis = svg.append("g")
+		  .attr("class", "x axis")
+		  .attr("transform", "translate(0," + height + ")")
+		  .call(x.axis = d3.svg.axis().scale(x).orient("bottom"));
+
+		var path = svg.append("g")
+		    .attr("clip-path", "url(#clip)")
+		  .append("path")
+		    .datum(data)
+		    .attr("class", "line")
+		    .attr("d", line);
+
+		var transition = d3.select({}).transition()
+		    .duration(duration)
+		    .ease("linear");
+
+		// var callback = function() {
+	 //    	// update the domains
+	 //    	now = new Date();
+	 //    	x.domain([now - (n - 2) * duration, now - duration]);
+	 //    	// push a new data point
+	 //    	data.push( random() );
+	 //    	// redraw the line, and then slide it to the left
+	 //    	path.attr("d", line).transition().attr("transform", "translate(" + x(now - (n - 1) * duration) + ")");
+	 //    	xAxis.call(x.axis);
+	 //    	// pop the old data point off the front
+	 //    	data.shift();
+	 //  	}
+
+
+		(function tick() {
+			transition = transition.each(function() {
+		    	// update the domains
+		    	now = new Date();
+		    	x.domain([now - (n - 2) * duration, now - duration]);
+		    	// push a new data point
+		    	data.push( random() );
+		    	console.log("data is ", data)
+		    	console.log("x display is ", x(now - (n - 1) * duration))
+		    	// redraw the line, and then slide it to the left
+		    	path.attr("d", line).transition().attr("transform", "translate(" + x(now - (n - 1) * duration) + ")");
+		    	xAxis.call(x.axis);
+		    	// pop the old data point off the front
+		    	data.shift();
+		  	} ).transition().each("start", tick);
+		}) ();
+
+		// X axis range slider
+		$(document).ready(function() {
+		  $(function() {
+		    var graph = d3.select("#chart");
+
+		    $( "#slider" ).slider({
+		      range: "min",
+		      value: 750,
+		      min: 200,
+		      max: 2000,
+		      slide: function( event, ui ) {
+		        old_n = n;
+		        n = ui.value;
+
+		        // update the domains
+		        now = new Date();
+		        x.domain([now - (n - 2) * duration, now - duration]);
+
+		        path
+		          .attr("d", line)
+		          .transition()
+		          .attr("transform", "translate(" + x(n - old_n) + ")");
+		      }
+		    });
+		  });
+		});
+
+	</script>
+
+</body>
+</html>

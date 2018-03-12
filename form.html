@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.0.6/d3.min.js"></script>
+	<style type="text/css">
+	  .axis path,
+	  .axis line {
+		    fill: none;
+		    stroke: #000;
+		    shape-rendering: crispEdges;
+		}
+	</style>
+</head>
+<body>
+	<form>
+		<label for="Room Width">Room Width (m): </label>
+		<input type="text" id="Room_Width" name="room_width" placeholder="5" marker="width">
+		<label for="Room Height">Room Height (m): </label>
+		<input type="text" id="Room_Height" name="room_height" placeholder="5" marker="height">
+		<button>reset</button>
+		<div id="visualization">
+		</div>
+	</form>
+
+
+	<script type="text/javascript">
+		var changeXAxis = function(width) {
+			defaultRoomWidth = width;
+			xAxisScale.domain([0, width])
+			d3.select(".x.axis").transition()
+			.call(xAxis);
+		}
+	</script>
+	<script type="text/javascript">
+		var changeYAxis = function(height) {
+			defaultRoomHeight = height;
+			yAxisScale.domain([0, height])
+			d3.select(".y.axis").transition()
+			.call(yAxis);
+		}
+	</script>
+
+	<script type="text/javascript">
+		var createMouseTrackingArea = function(svg) {
+			trackArea = svg.append("rect")
+			.attr("width", width)
+			.attr("height", height)
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("id", "mouse-tracker")
+			.style("pointer-events", "all")
+			.style("fill", "none");
+		}
+	</script>
+	<script type="text/javascript">
+		var createFocusCircle = function(focus) {
+			focus.append("circle").attr("class", "dot")
+			.style("fill", "none")
+			.style("stroke", "steelblue")
+			.attr("r", 4)
+			.attr("cx", 0)
+			.attr("cy", 0);
+		}
+	</script>
+	<script type="text/javascript">
+		var createFocusLines = function(svg) {
+			focus = svg.append("g").style("display", "none")
+			.attr("class", "focus");
+	    	// append x line, which measure the x distance
+		    focus.append("line")
+		        .attr("id", "x")
+		        .style("stroke", "steelblue")
+		        .style("stroke-dasharray", "5,3")
+		        .style("pointer-events", "none")
+		        .style("fill", "none")
+		        .style("opacity", 0.5)
+		        .attr("y1", height).attr("y2", height)
+		        .attr("x1",0).attr("x2",0)
+		        .attr("shape-rendering", "crispEdges");
+		    // append the y line, which meansure the y distance
+		    focus.append("line")
+		        .attr("id", "y")
+		        .style("stroke", "steelblue")
+		        .style("stroke-dasharray", "5,3")
+		        .style("pointer-events", "none")
+		        .style("fill", "none")
+		        .style("opacity", 0.5)
+		        .attr("x1", width).attr("y1", 0)
+		        .attr("x2", width).attr("y2", 0)
+		        .attr("shape-rendering", "crispEdges");;
+		}
+	</script>
+	<script type="text/javascript">
+		var createHoverCoodinate = function(focus) {
+
+		}
+	</script>
+
+	<script type="text/javascript">
+		var margin = {top: 50, right: 50, bottom: 50, left: 50},
+			width = 500 - margin.left - margin.right,
+			height = 500 - margin.top - margin.bottom;
+
+		var defaultRoomWidth = 5;
+		var defaultRoomHeight = 5;
+
+		var xAxisScale = d3.scale.linear()
+		.range([0, width]).domain([0, defaultRoomWidth]);
+
+		var yAxisScale = d3.scale.linear()
+		.range([height, 0]).domain([0, defaultRoomHeight]);
+
+		var color = d3.scale.category10();
+
+		var xAxis = d3.svg.axis().scale(xAxisScale).orient("bottom");
+
+		var yAxis = d3.svg.axis().scale(yAxisScale).orient("left");
+	
+		var svg = d3.select("#visualization").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+		svg.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis);
+
+		svg.append("g")
+		.attr("class", "y axis")
+		.call(yAxis);
+
+		var inputElems = d3.selectAll("input");
+		inputElems.on("change", inputChange);
+
+		function inputChange() {
+			console.log(d3.select(this).attr("marker"));
+			var marker = d3.select(this).attr("marker");
+			if (marker === "width") {
+				changeXAxis(this.value);
+			} else if (marker === "height") {
+				changeYAxis(this.value);
+			}
+		}
+
+		var trackArea;
+		createMouseTrackingArea(svg);
+
+		var focus;
+		createFocusLines(svg);
+		createFocusCircle(focus);
+
+		var mouseCoordinate;
+		var dotxValue;
+		var dotyValue;
+		var hoverCoodinate;
+		createHoverCoodinate(focus);
+
+		d3.select("#mouse-tracker")
+		.on("mouseover", function() { focus.style("display", "inline")})
+		.on("mousemove", mousemove)
+		.on("mouseout", function() {
+			console.log("Inside mouseout")
+			focus.style("display", "none");
+			d3.select("#x").style("opacity", 1e-6);
+			d3.select("#y").style("opacity", 1e-6);
+		})
+		.on("dblclick", doubleClick)
+
+
+
+		function mousemove() {
+			console.log("Inside mousemove");
+			console.log(d3.mouse(this))
+			mouseCoordinate = d3.mouse(this);
+			// Using invert function, mapping pixel value to domain value
+			// Previous we are maping domain value to pixel value to draw shape on SVG
+			dotxValue = xAxisScale.invert(mouseCoordinate[0]);
+			dotyValue = yAxisScale.invert(mouseCoordinate[1]);
+
+			// Translate the dot as mouse
+			focus.select(".dot").attr("transform", "translate(" + mouseCoordinate[0] + "," + mouseCoordinate[1] + ")")
+			.attr("cx", 0)
+			.attr("cy", 0)
+			.style("opacity", 1);
+
+
+			// problem solved: you need to add opacity to let the line not turn off
+		  	focus.select("#x")
+		    .attr("transform","translate(" + mouseCoordinate[0] + "," + height * -1 + ")")
+		    .attr("y2", height * 2)
+		    .style("opacity", 1);
+         
+
+		  	focus.select("#y")
+		    .attr("transform", "translate(" + width * -1 + "," + mouseCoordinate[1] + ")")
+		    .attr("x2", width+width)
+		    .style("opacity", 1);
+		}
+
+		function doubleClick() {
+			console.log("doubleClick");
+			console.log("dotxValue is", dotxValue);
+			console.log("dotyValue is", dotyValue);
+			svg.append("circle")
+			.attr("class", "doubleClickDot")
+			.attr("r", 4)
+			.attr("cx", mouseCoordinate[0])
+			.attr("cy", mouseCoordinate[1])
+			.style("fill", "black")
+		}
+
+	</script>
+
+</body>
+</html>

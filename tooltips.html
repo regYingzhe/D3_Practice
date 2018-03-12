@@ -88,7 +88,9 @@
 		        .style("stroke-dasharray", "3,3")
 		        .style("opacity", 0.5)
 		        .attr("y1", 0)
-		        .attr("y2", height);
+		        .attr("y2", height)
+		        .attr("x1",0)
+		        .attr("x2",0);
 
 		    // append the y line
 		    focus.append("line")
@@ -98,6 +100,8 @@
 		        .style("opacity", 0.5)
 		        .attr("x1", width)
 		        .attr("x2", width)
+		        .attr("y1", 0)
+		        .attr("y2", 0)
 
 		    // append the circle at the intersection
 		    focus.append("circle").attr("class", "y")
@@ -151,10 +155,6 @@
 		        console.log("i is ", i)
 		        console.log("d is ", d)
 
-		        focus.select("circle.y")                           // **********
-		        .attr("transform",                             // **********
-		        "translate(" + x(d.date) + "," +         // **********
-		        y(d.close) + ")");        // **********
 
 		        formatDate = d3.time.format("%d-%b");
 	    	   // append the x line
@@ -188,7 +188,8 @@
 			            "translate(" + x(d.date) + "," +
 			                           y(d.close) + ")")
 			      	.text(formatDate(d.date));
-
+			    // Transform the coordinate, the actually data point is not changing,
+			    // which is very important to realize. 
 			  	focus.select(".x")
 			    .attr("transform","translate(" + x(d.date) + "," + y(d.close) + ")")
 	            .attr("y2", height - y(d.close));

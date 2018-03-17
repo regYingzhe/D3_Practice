@@ -20,6 +20,13 @@
 		    stroke-opacity  : 0.5;
 		    fill            : transparent;
 		}
+		.drewRect {
+			stroke          : gray;
+		    stroke-width    : 1px;
+		    stroke-dasharray: 4px;
+		    stroke-opacity  : 0.5;
+		    fill            : transparent;
+		}
 	</style>
 </head>
 <body>
@@ -29,6 +36,17 @@
 		<label for="Room_Height">Room Height (m) = </label>
 		<input type="number" id="Room_Height" name="room_height" placeholder="5.0" autocomplete="off">
 		<button>reset</button>
+		<p>Please select your drawing method</p>
+		<div>
+			<input type="radio" id="rectDrawing" name="drawing" value="rectangle">
+			<label for="rectDrawing">Rectangle</label>
+			<input type="radio" id="circleDrawing" name="drawing" value="circle">
+			<label for="circleDrawing">Circle</label>
+			<input type="radio" id="lineDrawing" name="drawing" value="line">
+			<label for="lineDrawing">Line</label>
+			<input type="radio" id="freeDrawing" name="drawing" value="free_hand">
+			<label for="freeDrawing">Free Drawing</label>
+		</div>
 		<div id="visualization">
 		</div>
 	</form>
@@ -59,6 +77,19 @@
 			.attr("x", 0)
 			.attr("y", 0)
 			.attr("id", "mouse-tracker")
+			.style("pointer-events", "all")
+			.style("fill", "none");
+		}
+	</script>
+
+	<script type="text/javascript">
+		var createDrawRectArea = function(svg) {
+			rectArea = svg.append("rect")
+			.attr("width", width)
+			.attr("height", height)
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("id", "draw-rect")
 			.style("pointer-events", "all")
 			.style("fill", "none");
 		}
@@ -112,6 +143,19 @@
 			.attr("y", 0)
 		}
 	</script>
+	<script type="text/javascript">
+		var setOption = function(optionsObj, optionKey) {
+			// Enable the drawing signal
+			d3.keys(optionsObj).forEach(function(key) {
+					if (key === optionKey) {
+					optionsObj[key] = true;
+					
+				} else {
+					optionsObj[key] = false;
+				}
+			})
+		}
+	</script>
 
 	<script type="text/javascript">
 		var margin = {top: 50, right: 50, bottom: 50, left: 50},
@@ -138,6 +182,33 @@
 		.attr("height", height + margin.top + margin.bottom)
 		.append("g")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+		.on("mouseup", mouseupForDrawingRect)
+
+
+		var radioOptionsDefault = {
+			enableRectDrawing: false,
+			enableCircleDrawing: false,
+			enableLineDrawing: false,
+			enableFreeHandDrawing: false
+		}
+
+		var inputElems = d3.selectAll("input");
+		inputElems.on("change", setDrawingMethod);
+
+		function setDrawingMethod() {
+			console.log("Inside set drawing method")
+			var inputValue = this.value;
+			if (inputValue === "rectangle") {
+				setOption(radioOptionsDefault, d3.keys(radioOptionsDefault)[0]);
+			} else if (inputValue === "circle") {
+				setOption(radioOptionsDefault, d3.keys(radioOptionsDefault)[1]);
+			} else if (inputValue === "line") {
+				setOption(radioOptionsDefault, d3.keys(radioOptionsDefault)[2])
+			} else if (inputValue === "free_hand") {
+				setOption(radioOptionsDefault, d3.keys(radioOptionsDefault)[3])
+			}
+			console.log("radioOptionsDefault is ", radioOptionsDefault)
+		}
 
 		svg.append("g")
 		.attr("class", "x axis")
@@ -186,6 +257,7 @@
 		var dotxValue;
 		var dotyValue;
 		var hoverCoodinate;
+		var rectDrawing;
 		createHoverCoodinate(focus);
 
 		// Tooltips visualization
@@ -200,7 +272,9 @@
 			hoverCoodinate.text(null);
 		})
 		.on("dblclick", doubleClick)
-		
+
+		// var rectArea;
+		// createDrawRectArea(svg);
 
 		function mousemove() {
 			// console.log("Inside mousemove");
@@ -233,10 +307,21 @@
 		    .style("opacity", 1)
 		    .text("x: " + dotxValue.toFixed(2) + ", y: " + dotyValue.toFixed(2))
 
-		    // .on("mousedown", mousedownForDrawingRect);
+		    if (d3.select(".doubleClickDot")) {
+				// console.log("Hello dots")
+				d3.selectAll(".doubleClickDot")
+				.on("mouseover", onDot)
+				.on("mousedown", mousedownForDrawingRect)
+			}
+
+		}
+		function onDot() {
+			console.log("I am on dot");
 		}
 
 		function doubleClick() {
+			// Experience Gained: add pointer events none on the dot
+			// and add svg.append instead of focus append
 			console.log("doubleClick");
 			console.log("dotxValue is", dotxValue);
 			console.log("dotyValue is", dotyValue);
@@ -245,32 +330,60 @@
 			.attr("r", 4)
 			.attr("cx", mouseCoordinate[0])
 			.attr("cy", mouseCoordinate[1])
-			.style("fill", "black")
-			.style("pointer-events", "none")
+			.style("fill", "steelblue")
+			// .style("pointer-events", "none")
 		}
 
 		// Drawing visualization
-
 		function mousedownForDrawingRect() {
 			console.log("mouse down for drawing rect");
-			var rectDrawing = svg.append("rect")
+			rectDrawing = svg.append("rect")
+				.attr("class", "drewRect")
 				.attr("x", mouseCoordinate[0])
 				.attr("y", mouseCoordinate[1])
 				.attr("height", 0)
-				.attr("width", 0);
-
-			// focus.on("mousemove", mousemoveForDrawingRect);
+				.attr("width", 0)
+				.style("pointer-events", "none")
+			svg.on("mousemove", mousemoveForDrawingRect);
 		}
 
 		function mousemoveForDrawingRect() {
+			var localMouseCoordinate = d3.mouse(this);
+      		// Construct the current rectData
+      		rectData = {
+      			x: +rectDrawing.attr("x"),
+      			y: +rectDrawing.attr("y"),
+      			width: +rectDrawing.attr("width"),
+      			height: +rectDrawing.attr("height")
+      		},
+      		// Construct the mouse moving Data
+      		move = {
+      			x: localMouseCoordinate[0] - rectData.x,
+      			y: localMouseCoordinate[1] - rectData.y
+      		}
 
+      		// Define the origin
+      		// if mouse move left, the orign will change to mousecoodinate
+      		if (move.x < 1 || move.x * 2 < rectData.width) {
+      			rectData.x = localMouseCoordinate[0];
+      			rectData.width -= move.x;
+      		} else {
+      			rectData.width = move.x;
+      		}
+
+      		if (move.y < 1 || move.y * 2 < rectData.height) {
+      			rectData.y = localMouseCoordinate[1];
+      			rectData.height -= move.y;
+      		} else {
+      			rectData.height = move.y;
+      		}
+
+      		rectDrawing.attr(rectData);
 		}
 
 		function mouseupForDrawingRect() {
-
+			svg.on("mousemove", null);
 		}
-
-
 
 	</script>
 

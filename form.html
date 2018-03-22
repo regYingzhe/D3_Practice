@@ -23,7 +23,6 @@
 		.drewRect {
 			stroke          : gray;
 		    stroke-width    : 1px;
-		    stroke-dasharray: 4px;
 		    stroke-opacity  : 0.5;
 		    fill            : transparent;
 		}
@@ -36,8 +35,25 @@
 		.drewCircle {
 			stroke          : orange;
 			stroke-width    : 1px;
-			stroke-dasharray: 4px;
+			/*stroke-dasharray: 4px;*/
 		    stroke-opacity  : 0.5;
+		}
+		.drawStraightLine {
+			stroke: gray;
+			stroke-width: 1px;
+			stroke-dasharray: 4px;
+		}
+		.freeHandLine {
+			fill: none;
+		  	stroke: #000;
+		  	stroke-width: 3px;
+		  	stroke-linejoin: round;
+		  	stroke-linecap: round;
+		}
+		.lineOnDot {
+			stroke: gray;
+			stroke-width: 1px;
+			stroke-dasharray: 4px;
 		}
 	</style>
 </head>
@@ -188,6 +204,18 @@
 		var xAxis = d3.svg.axis().scale(xAxisScale).orient("bottom");
 
 		var yAxis = d3.svg.axis().scale(yAxisScale).orient("left");
+
+		// Define the line function for how to draw the line
+		var lineFunc = d3.svg.line()
+		.x(function(d) { return d[0]; })
+		.y(function(d) { return d[1]; })
+		.interpolate("linear");
+
+		var renderPath = d3.svg.line()
+		.x(function(d) { return d[0]; })
+		.y(function(d) { return d[1]; })
+		.tension(0)
+		.interpolate("cardinal");
 	
 		var svg = d3.select("#visualization").append("svg")
 		.attr("width", width + margin.left + margin.right)
@@ -219,6 +247,7 @@
 			} else if (inputValue === "free_hand") {
 				setOption(radioOptionsDefault, d3.keys(radioOptionsDefault)[3])
 			}
+			svg.on("mousemove", null)
 			console.log("radioOptionsDefault is ", radioOptionsDefault)
 		}
 
@@ -274,24 +303,30 @@
 		var lineDrawing;
 		var FreeHandDrawing;
 		var circleRadiusLineDrawing;
+		var straightLinePath;
+		var activeLine;
 		createHoverCoodinate(focus);
+		
 
 		// Tooltips visualization
 		// Mouse tracking area will track mouse events
-		d3.select("#mouse-tracker")
+		trackArea
 		.on("mouseover", function() { focus.style("display", "inline")})
 		.on("mousemove", mousemove)
 		.on("mouseout", function() {
-			console.log("Inside mouseout")
+			console.log("Inside mouse out of the mouse tracker area")
 			focus.style("display", "none");
 			d3.select("#x").style("opacity", 1e-6);
 			d3.select("#y").style("opacity", 1e-6);
 			hoverCoodinate.text(null);
+			trackArea.on("mousedown.drag", null);
 		})
 		.on("dblclick", doubleClick)
 
+	
+
 		function mousemove() {
-			// console.log("Inside mousemove");
+			console.log("Inside mouse move of the mouse tracker area");
 			// console.log(d3.mouse(this))
 			mouseCoordinate = d3.mouse(this);
 			// Using invert function, mapping pixel value to domain value
@@ -333,11 +368,91 @@
 				})
 			}
 
+			if (radioOptionsDefault.enableFreeHandDrawing) {
+					console.log("Inside free hand drawing");
+					// activeLine = svg.append("path").datum([]).attr("class", "freeHandLine");
+					var drag = d3.behavior.drag()
+					.on("dragstart", dragstarted)
+					.on("drag", dragged)
+					.on("dragend", dragended)
+					trackArea.call(drag)
+			}
+
+			trackArea.on("mousedown", function() {
+				if (radioOptionsDefault.enableLineDrawing) {
+					console.log("Inside mousedown for drawing Lines")
+					xy0 = d3.mouse(this)
+					straightLinePath = svg.append("line").attr("class", "drawStraightLine")
+					.attr("x1", xy0[0])
+					.attr("y1", xy0[1])
+					.attr("x2", xy0[0])
+					.attr("y2", xy0[1])
+					.style("pointer-events", "none")
+
+					svg.on("mousemove", keepDrawingLine)
+					.on("mouseup", mouseupForFinishingDrawingLine)
+				} 
+				// else if (radioOptionsDefault.enableFreeHandDrawing) {
+
+				// }
+			})
 		}
+
+		function mouseupForFinishingDrawingLine() {
+			console.log("Up for finishing drawing, potential option change")
+			svg.on("mousemove", null);
+		}
+
+		// Functions for completeing free hand drawing
+		function dragstarted() {
+			activeLine = svg.append("path").datum([]).attr("class", "freeHandLine")
+			.style("pointer-events", "none");
+			activeLine.datum().push(d3.mouse(this));
+		}
+
+		function dragged() {
+			activeLine.datum().push(d3.mouse(this));
+			activeLine.attr("d", renderPath);
+		}
+
+		function dragended() {
+			trackArea.on("mousedown.drag", null);
+			activeLine = null;
+		}
+
 		function onDot(ele) {
 			console.log("I am on dot");
 			console.log("dot data is ", ele)
 		}
+
+		function keepDrawingLine() {
+			console.log("Inside keep drawing line")
+			var localMouseCoordinate = d3.mouse(this);
+			straightLineData = {
+				x1: +straightLinePath.attr("x1"),
+				y1: +straightLinePath.attr("y1"),
+				x2: +straightLinePath.attr("x2"),
+				y2: +straightLinePath.attr("y2")
+			}
+
+			var move = {
+				x: localMouseCoordinate[0],
+				y: localMouseCoordinate[1],
+			}
+
+			if (move.x < 1) {
+			} else {
+				straightLineData.x2 = move.x
+			}
+			if (move.y < 1) {
+			} else {
+				straightLineData.y2 = move.y
+			}
+
+			straightLinePath.attr(straightLineData);
+			console.log("straight Line Data is ", straightLineData)
+		}
+
 
 		function doubleClick() {
 			// Experience Gained: add pointer events none on the dot
@@ -357,6 +472,7 @@
 		// Drawing visualization
 		// Drawing shape will depend on the selection
 		// This function govering drawing all the shapes
+
 		function mousedownForDrawing(dot) {
 			// If drawing rect enabled
 			// Get the dot center coodiate
@@ -402,14 +518,31 @@
 
 				svg.on("mousemove", mousemoveForDrawingCircle)
 					.on("mouseup", mouseupForFinishDrawingCircle);
-				  
 
 			} else if (radioOptionsDefault.enableLineDrawing) {
-				console.log("mouse down for drawing lines")
+				// Learned: d3.mouse(this) won't trigger. This key word
+				// only acting on the element you selected
+				console.log("mouse down for drawing lines on the dot");
+				// console.log("coordinate is ", d3.mouse(this));
+				// console.log(localMouseCoordinate);
+				var localDotCoordinate = [dotx, doty]
+				lineOnDotPath = svg.append("path").attr("class", "lineOnDot").attr("d", lineFunc([localDotCoordinate, localDotCoordinate]))
+
+				svg.on("mousemove", function() {
+					var Line = lineFunc([localDotCoordinate, 
+						d3.mouse(this).map(function(x){ return x - 1; })
+					])
+					lineOnDotPath.attr("d", Line)
+				}).on("mouseup", function() {
+					svg.on("mousemove", null);
+				})
+
+
 			} else if (radioOptionsDefault.enableFreeHandDrawing) {
-				console.log("mouse down for free drawing")
+				console.log("mouse down for free drawing");
+
 			} else {
-				alert("Please select the Drawing Method")
+				alert("Please select the Drawing Method");
 			}
 		}
 

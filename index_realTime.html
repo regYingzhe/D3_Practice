@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Author: Bo Ericsson -->
+  <title>Real Time Chart Multi</title>
+  <link rel=stylesheet type=text/css href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" media="all">
+  <!--<link rel=stylesheet type=text/css href="../_lib/bootstrap.min.css" media="all">-->
+  <style>
+  .axis text {
+    font: 10px sans-serif;
+  }
+  .chartTitle {
+    font-size: 12px;
+    font-weight: bold;
+    text-anchor: middle; 
+  }
+  .axis .title {
+    font-weight: bold;
+    text-anchor: middle;
+  }
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+  .x.axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+  .nav .area {
+    fill: lightgrey;
+    stroke-width: 0px;
+  }
+  .nav .line {
+    fill: none;
+    stroke: darkgrey;
+    stroke-width: 1px;
+  }
+  .viewport {
+    stroke: grey;
+    fill: black;
+    fill-opacity: 0.3;
+  }
+  .viewport .extent {
+    fill: green;
+  }
+  .well {
+    padding-top: 0px;
+    padding-bottom: 0px;
+  }
+  </style>
+<body>
+
+<div style="max-width: 900px; max-height: 400px; padding: 10px">
+
+  <div class="well">
+    <h4>D3 Based Real Time Chart with Multiple Data Streams 
+  </div>
+  <div id="viewDiv"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+<script src="realTimeChartMulti.js"></script>
+<script>
+'use strict';
+
+// create the real time chart
+var chart = realTimeChartMulti()
+    .title("Chart Title")
+    .yTitle("Categories")
+    .xTitle("Time")
+    .yDomain(["Category1"]) // initial y domain (note array)
+    .border(true)
+    .width(900)
+    .height(350);
+
+// invoke the chart
+var chartDiv = d3.select("#viewDiv").append("div")
+    .attr("id", "chartDiv")
+    .call(chart);
+
+// define color scale
+var color = d3.scale.category10();
+
+// in a normal use case, real time data would arrive through the network or some other mechanism
+var d = -1;
+var timeout = 0;
+
+// define data generator
+function dataGenerator() {
+  setTimeout(function() {
+    // output a sample for each category, each interval (five seconds)
+    // create randomized timestamp for this category data item
+    var now = new Date(new Date().getTime());
+    // create new data item
+    var obj;
+    obj = {
+      time: now,
+      color: color(d % 10),
+      opacity: Math.max(Math.random(), 0.3),
+      category: "Category1",
+      type: "circle",
+      size: Math.max(Math.round(Math.random() * 12), 4),
+    };
+    // send data to chart
+    chart.datum(obj);      
+    dataGenerator();
+  }, 1000);
+}
+// start the data generator
+dataGenerator();
+
+</script>
